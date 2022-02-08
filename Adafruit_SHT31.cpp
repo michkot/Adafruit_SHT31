@@ -28,14 +28,14 @@
  */
 
 #include "Adafruit_SHT31.h"
+#include <Wire.h>
 
 /*!
  * @brief  SHT31 constructor using i2c
  * @param  *theWire
  *         optional wire
  */
-Adafruit_SHT31::Adafruit_SHT31(TwoWire *theWire) {
-  _wire = theWire;
+Adafruit_SHT31::Adafruit_SHT31() {
 
   humidity = NAN;
   temp = NAN;
@@ -44,20 +44,15 @@ Adafruit_SHT31::Adafruit_SHT31(TwoWire *theWire) {
 /**
  * Initialises the I2C bus, and assigns the I2C address to us.
  *
+ * @param theWire   The TwoWire instance to use - you can use global Wire
  * @param i2caddr   The I2C address to use for the sensor.
  *
  * @return True if initialisation was successful, otherwise False.
  */
-bool Adafruit_SHT31::begin(uint8_t i2caddr) {
-  if (i2c_dev) {
-    delete i2c_dev; // remove old interface
-  }
-
-  i2c_dev = new Adafruit_I2CDevice(i2caddr, _wire);
-
-  if (!i2c_dev->begin()) {
-    return false;
-  }
+bool Adafruit_SHT31::begin(TwoWire *theWire, uint8_t i2caddr) {
+  
+  _wire = theWire;
+  addr = i2caddr;
 
   reset();
   return readStatus() != 0xFFFF;
@@ -72,7 +67,8 @@ uint16_t Adafruit_SHT31::readStatus(void) {
   writeCommand(SHT31_READSTATUS);
 
   uint8_t data[3];
-  i2c_dev->read(data, 3);
+  _wire->requestFrom(addr, 3u);
+  _wire->readBytes(data, 3);
 
   uint16_t stat = data[0];
   stat <<= 8;
@@ -180,7 +176,8 @@ bool Adafruit_SHT31::readTempHum(void) {
 
   delay(20);
 
-  i2c_dev->read(readbuffer, sizeof(readbuffer));
+  _wire->requestFrom(addr, sizeof(readbuffer));
+  _wire->readBytes(readbuffer, sizeof(readbuffer));
 
   if (readbuffer[2] != crc8(readbuffer, 2) ||
       readbuffer[5] != crc8(readbuffer + 3, 2))
@@ -212,5 +209,10 @@ bool Adafruit_SHT31::writeCommand(uint16_t command) {
   cmd[0] = command >> 8;
   cmd[1] = command & 0xFF;
 
-  return i2c_dev->write(cmd, 2);
+  _wire->beginTransmission(addr);
+  _wire->write(cmd, 2);
+  _wire->endTransmission();
+  return true;
 }
+
+

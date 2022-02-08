@@ -21,7 +21,9 @@
 #define ADAFRUIT_SHT31_H
 
 #include "Arduino.h"
-#include <Adafruit_I2CDevice.h>
+
+// forward declaration only, no need to load it!
+class TwoWire;
 
 #define SHT31_DEFAULT_ADDR 0x44 /**< SHT31 Default Address */
 #define SHT31_MEAS_HIGHREP_STRETCH                                             \
@@ -43,17 +45,14 @@
 #define SHT31_HEATERDIS 0x3066    /**< Heater Disable */
 #define SHT31_REG_HEATER_BIT 0x0d /**< Status Register Heater Bit */
 
-extern TwoWire Wire; /**< Forward declarations of Wire for board/variant
-                        combinations that don't have a default 'Wire' */
-
 /**
  * Driver for the Adafruit SHT31-D Temperature and Humidity breakout board.
  */
 class Adafruit_SHT31 {
 public:
-  Adafruit_SHT31(TwoWire *theWire = &Wire);
+  Adafruit_SHT31();
 
-  bool begin(uint8_t i2caddr = SHT31_DEFAULT_ADDR);
+  bool begin(TwoWire *theWire = nullptr, uint8_t i2caddr = SHT31_DEFAULT_ADDR);
   float readTemperature(void);
   float readHumidity(void);
   uint16_t readStatus(void);
@@ -75,8 +74,8 @@ private:
   bool readTempHum(void);
   bool writeCommand(uint16_t cmd);
 
-  TwoWire *_wire;                     /**< Wire object */
-  Adafruit_I2CDevice *i2c_dev = NULL; ///< Pointer to I2C bus interface
+  TwoWire *_wire;
+  uint8_t addr;
 };
 
 #endif
